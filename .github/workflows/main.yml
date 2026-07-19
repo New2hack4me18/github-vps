@@ -1,1 +1,288 @@
+name: Kali Linux VPS Setup & Deployment
 
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  setup-kali-tools:
+    runs-on: ubuntu-latest
+    container:
+      image: kalilinux/kali-rolling
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Update system
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            curl \
+            wget \
+            git \
+            build-essential \
+            python3 \
+            python3-pip
+      
+      - name: Install Kali Tools - Information Gathering
+        run: |
+          apt-get install -y --no-install-recommends \
+            nmap \
+            whois \
+            dig \
+            dnsmap \
+            dnsenum \
+            fierce \
+            masscan \
+            shodan
+      
+      - name: Install Kali Tools - Vulnerability Analysis
+        run: |
+          apt-get install -y --no-install-recommends \
+            nikto \
+            openvas \
+            nessus \
+            sqlmap \
+            commix
+      
+      - name: Install Kali Tools - Web Application Testing
+        run: |
+          apt-get install -y --no-install-recommends \
+            burpsuite \
+            zaproxy \
+            w3af \
+            webscarab
+      
+      - name: Install Kali Tools - Database Assessment
+        run: |
+          apt-get install -y --no-install-recommends \
+            sqlmap \
+            nosqlmap
+      
+      - name: Install Kali Tools - Password Cracking
+        run: |
+          apt-get install -y --no-install-recommends \
+            hashcat \
+            john \
+            hydra \
+            medusa \
+            ncrack
+      
+      - name: Install Kali Tools - Wireless Testing
+        run: |
+          apt-get install -y --no-install-recommends \
+            aircrack-ng \
+            wireshark \
+            kismet \
+            wifite
+      
+      - name: Install Kali Tools - Exploitation
+        run: |
+          apt-get install -y --no-install-recommends \
+            metasploit-framework \
+            msfconsole \
+            searchsploit
+      
+      - name: Install Kali Tools - Sniffing & Spoofing
+        run: |
+          apt-get install -y --no-install-recommends \
+            wireshark \
+            tcpdump \
+            dsniff \
+            ettercap-common \
+            mitmproxy
+      
+      - name: Install Kali Tools - Post Exploitation
+        run: |
+          apt-get install -y --no-install-recommends \
+            mimikatz \
+            powersploit \
+            empire
+      
+      - name: Install Kali Tools - Forensics
+        run: |
+          apt-get install -y --no-install-recommends \
+            autopsy \
+            sleuthkit \
+            volatility
+      
+      - name: Install Kali Tools - Reverse Engineering
+        run: |
+          apt-get install -y --no-install-recommends \
+            ghidra \
+            radare2 \
+            gdb \
+            binwalk
+      
+      - name: Verify installations
+        run: |
+          echo "=== Tool Versions ===" > tools_report.txt
+          nmap --version >> tools_report.txt 2>&1 || echo "nmap: not found" >> tools_report.txt
+          sqlmap --version >> tools_report.txt 2>&1 || echo "sqlmap: not found" >> tools_report.txt
+          hashcat --version >> tools_report.txt 2>&1 || echo "hashcat: not found" >> tools_report.txt
+          aircrack-ng --version >> tools_report.txt 2>&1 || echo "aircrack-ng: not found" >> tools_report.txt
+          cat tools_report.txt
+      
+      - name: Upload tools report
+        uses: actions/upload-artifact@v3
+        with:
+          name: kali-tools-report
+          path: tools_report.txt
+
+  documentation:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Generate Kali Commands Documentation
+        run: |
+          cat > KALI_COMMANDS.md << 'EOF'
+          # Kali Linux Tools & Commands Reference
+          
+          ## Information Gathering
+          
+          ### Nmap (Network Scanning)
+          - Basic scan: `nmap target.com`
+          - Full port scan: `nmap -p- target.com`
+          - Service detection: `nmap -sV target.com`
+          - OS detection: `nmap -O target.com`
+          - Aggressive scan: `nmap -A target.com`
+          - Stealth scan: `nmap -sS target.com`
+          
+          ### DNS Enumeration
+          - `dig target.com`
+          - `nslookup target.com`
+          - `dnsmap target.com`
+          - `dnsenum target.com`
+          
+          ### Whois Lookup
+          - `whois target.com`
+          - `whois 192.168.1.1`
+          
+          ## Vulnerability Scanning
+          
+          ### SQLMap (SQL Injection)
+          - Basic SQL injection: `sqlmap -u "http://target.com/page?id=1" --dbs`
+          - Dump all databases: `sqlmap -u "http://target.com/page?id=1" --dump-all`
+          - Specific table: `sqlmap -u "http://target.com/page?id=1" -D database_name -T table_name --dump`
+          
+          ### Nikto (Web Scanner)
+          - Basic scan: `nikto -h target.com`
+          - SSL scan: `nikto -h target.com -ssl`
+          - Port specific: `nikto -h target.com:8080`
+          
+          ## Password Cracking
+          
+          ### Hashcat
+          - Brute force: `hashcat -m 0 hash.txt -a 3 ?a?a?a?a`
+          - Dictionary attack: `hashcat -m 0 hash.txt wordlist.txt`
+          - Combined: `hashcat -m 0 hash.txt wordlist.txt -r rules.txt`
+          
+          ### John the Ripper
+          - Auto-detect: `john hash.txt`
+          - Specific format: `john --format=md5 hash.txt`
+          - Dictionary mode: `john --wordlist=wordlist.txt hash.txt`
+          - Show cracked: `john --show hash.txt`
+          
+          ### Hydra (Online Cracking)
+          - SSH: `hydra -l username -P wordlist.txt ssh://target.com`
+          - HTTP: `hydra -l username -P wordlist.txt http-post-form://target.com"/login:user=^USER^&pass=^PASS^:Failed"`
+          - FTP: `hydra -l username -P wordlist.txt ftp://target.com`
+          
+          ## Wireless Testing
+          
+          ### Aircrack-ng Suite
+          - Put card in monitor mode: `airmon-ng start wlan0`
+          - Capture handshake: `airodump-ng wlan0mon -c 6 -w capture`
+          - Crack WPA2: `aircrack-ng -w wordlist.txt capture*.cap`
+          
+          ## Network Sniffing
+          
+          ### Wireshark
+          - Start capture: `wireshark`
+          - Command line: `tshark -i eth0`
+          
+          ### Tcpdump
+          - Capture packets: `tcpdump -i eth0 -w capture.pcap`
+          - Filter by host: `tcpdump -i eth0 host 192.168.1.1`
+          - Filter by port: `tcpdump -i eth0 port 80`
+          
+          ## Web Application Testing
+          
+          ### Burp Suite
+          - Start: `burpsuite`
+          - Intercept traffic and test for vulnerabilities
+          
+          ### OWASP ZAP
+          - Start: `zaproxy`
+          - Scan: `zaproxy -cmd -quickurl http://target.com`
+          
+          ## Exploitation
+          
+          ### Metasploit Framework
+          - Start: `msfconsole`
+          - Search exploit: `search type:exploit platform:windows ms17-010`
+          - Use exploit: `use exploit/windows/smb/ms17_010_eternalblue`
+          - Set options: `set RHOSTS target.com`
+          - Run: `run` or `exploit`
+          
+          ### Searchsploit
+          - Find exploit: `searchsploit ms17-010`
+          - Show path: `searchsploit -p 40897`
+          
+          ## Forensics
+          
+          ### Autopsy
+          - Start GUI: `autopsy`
+          
+          ### Volatility (Memory Forensics)
+          - List processes: `volatility -f memory.dump --profile=Win7SP1x64 pslist`
+          - Get command line: `volatility -f memory.dump --profile=Win7SP1x64 cmdline`
+          
+          ## Reverse Engineering
+          
+          ### Ghidra
+          - Start: `ghidraRun`
+          
+          ### Radare2
+          - Open binary: `r2 binary.exe`
+          - Analyze: `aa`
+          - List functions: `afl`
+          - Disassemble: `pd`
+          
+          ### Binwalk (Firmware Analysis)
+          - Scan: `binwalk firmware.bin`
+          - Extract: `binwalk -e firmware.bin`
+          
+          EOF
+          cat KALI_COMMANDS.md
+      
+      - name: Commit documentation
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add KALI_COMMANDS.md
+          git commit -m "Add Kali Linux commands documentation" || echo "No changes to commit"
+          git push || echo "Push failed - may already be up to date"
+
+  deploy:
+    needs: [setup-kali-tools, documentation]
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Deployment Summary
+        run: |
+          echo "✅ Kali Linux tools setup completed"
+          echo "✅ Documentation generated"
+          echo "✅ Ready for deployment"
+          echo ""
+          echo "Next steps:"
+          echo "1. Review KALI_COMMANDS.md"
+          echo "2. Test tools on your VPS"
+          echo "3. Customize workflow as needed"
